@@ -13,7 +13,7 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  public async login(email: string, password: string) {
+  public async login(email: string, password: string): Promise<AuthResponse> {
     const user = await this.validateUser(email, password);
     return {
       token: this.generateToken(user),
@@ -50,7 +50,7 @@ export class AuthService {
     const user = await this.userService.findByEmail(email);
     const passwordsEqual = await bcrypt.compare(password, user.password);
 
-    if (user && passwordsEqual) {
+    if (passwordsEqual) {
       return user;
     }
 
