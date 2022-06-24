@@ -13,7 +13,13 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  public async login(userDto: UserDto) {}
+  public async login(email: string, password: string) {
+    const user = await this.validateUser(email, password);
+    return {
+      token: this.generateToken(user),
+      user: user,
+    };
+  }
 
   public async register(userDto: UserDto): Promise<AuthResponse> {
     const user = await this.userService.findByEmail(userDto.email);
@@ -35,5 +41,19 @@ export class AuthService {
   private generateToken(user: UserDocument): string {
     const payload = { email: user.email, sub: user._id };
     return this.jwtService.sign(payload);
+  }
+
+  private async validateUser(
+    email: string,
+    password: string,
+  ): Promise<UserDocument> {
+    const user = await this.userService.findByEmail(email);
+    const passwordsEqual = await bcrypt.compare(password, user.password);
+
+    if (user && passwordsEqual) {
+      return user;
+    }
+
+    throw new BadRequestException('Invalid credentials');
   }
 }
