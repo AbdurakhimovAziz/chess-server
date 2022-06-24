@@ -1,10 +1,17 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { UserDto } from 'src/users/dto/user.dto';
-import { UsersService } from 'src/users/users.service';
 import * as bcrypt from 'bcrypt';
-import { UserDocument } from 'src/users/schemas/user.schema';
-import { AuthResponse } from './auth.response';
+
+import { UserDto } from '../users/dto/user.dto';
+import { UsersService } from '../users/users.service';
+import { UserDocument } from '../users/schemas/user.schema';
+import { AuthResponse } from './models/auth-response.model';
 
 @Injectable()
 export class AuthService {
@@ -15,6 +22,10 @@ export class AuthService {
 
   public async login(email: string, password: string): Promise<AuthResponse> {
     const user = await this.validateUser(email, password);
+
+    if (!user)
+      throw new NotFoundException(`User with email ${email} not found`);
+
     return {
       token: this.generateToken(user),
       user: user,
@@ -26,6 +37,7 @@ export class AuthService {
     if (user) {
       throw new BadRequestException('User already exists');
     }
+    HttpStatus.FORBIDDEN;
     const hashedPassword = await bcrypt.hash(userDto.password, 10);
     const newUser = await this.userService.createUser({
       ...userDto,
@@ -48,12 +60,16 @@ export class AuthService {
     password: string,
   ): Promise<UserDocument> {
     const user = await this.userService.findByEmail(email);
+
+    if (!user)
+      throw new NotFoundException(`User with email ${email} not found`);
+
     const passwordsEqual = await bcrypt.compare(password, user.password);
 
     if (passwordsEqual) {
       return user;
     }
 
-    throw new BadRequestException('Invalid credentials');
+    throw new UnauthorizedException('Invalid credentials');
   }
 }
