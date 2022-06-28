@@ -11,7 +11,7 @@ import * as bcrypt from 'bcrypt';
 import { UserDto } from '../users/dto/user.dto';
 import { UsersService } from '../users/users.service';
 import { UserDocument } from '../users/schemas/user.schema';
-import { AuthResponse } from './models/auth-response.model';
+import { SigninResponse, SignupResponse } from './models/auth-response.model';
 
 @Injectable()
 export class AuthService {
@@ -20,7 +20,7 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  public async login(email: string, password: string): Promise<AuthResponse> {
+  public async login(email: string, password: string): Promise<SigninResponse> {
     const user = await this.validateUser(email, password);
 
     if (!user)
@@ -32,12 +32,11 @@ export class AuthService {
     };
   }
 
-  public async register(userDto: UserDto): Promise<AuthResponse> {
+  public async register(userDto: UserDto): Promise<SignupResponse> {
     const user = await this.userService.findByEmail(userDto.email);
     if (user) {
       throw new BadRequestException('User already exists');
     }
-    HttpStatus.FORBIDDEN;
     const hashedPassword = await bcrypt.hash(userDto.password, 10);
     const newUser = await this.userService.createUser({
       ...userDto,
@@ -45,8 +44,7 @@ export class AuthService {
     });
 
     return {
-      token: this.generateToken(newUser),
-      user: newUser,
+      message: 'User created successfully',
     };
   }
 
