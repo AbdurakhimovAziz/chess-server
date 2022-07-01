@@ -1,28 +1,38 @@
 import {
+  ConnectedSocket,
+  MessageBody,
   OnGatewayConnection,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
+import { Server, WebSocket } from 'ws';
 
-@WebSocketGateway({
-  cors: {
-    origin: '*',
-  },
-})
+@WebSocketGateway()
 export class AppGateway implements OnGatewayConnection {
   @WebSocketServer()
   server: Server;
 
-  handleConnection(client: any, ...args: any[]) {
+  handleConnection(client: any, ...args: any[]): void {
     console.log('Client connected');
+    client.send(JSON.stringify({ event: 'connected' }));
   }
 
   @SubscribeMessage('message')
-  handleMessage(client: Socket, payload: any): string {
-    console.log('Message received: ', payload);
+  handleEvent(
+    @MessageBody() data: string,
+    @ConnectedSocket() client: WebSocket,
+  ): string {
+    client.send(JSON.stringify({ event: 'message', data }));
+    return 'data';
+  }
 
-    return 'Hello world!';
+  @SubscribeMessage('test')
+  handleMsg(
+    @MessageBody() data: string,
+    @ConnectedSocket() client: WebSocket,
+  ): string {
+    client.send(JSON.stringify({ event: 'test', data }));
+    return 'df';
   }
 }
