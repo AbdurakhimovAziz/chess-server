@@ -5,6 +5,7 @@ import {
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
+  WsResponse,
 } from '@nestjs/websockets';
 import { Server, WebSocket } from 'ws';
 
@@ -13,26 +14,22 @@ export class AppGateway implements OnGatewayConnection {
   @WebSocketServer()
   server: Server;
 
-  handleConnection(client: any, ...args: any[]): void {
+  handleConnection(client: WebSocket, ...args: any[]): void {
     console.log('Client connected');
-    client.send(JSON.stringify({ event: 'connected' }));
+    client.send(JSON.stringify({ data: 'Successfully connected' }));
   }
 
   @SubscribeMessage('message')
   handleEvent(
     @MessageBody() data: string,
     @ConnectedSocket() client: WebSocket,
-  ): string {
-    client.send(JSON.stringify({ event: 'message', data }));
-    return 'data';
+  ): WsResponse<any> {
+    const event = 'message';
+    return { event, data };
   }
 
   @SubscribeMessage('test')
-  handleMsg(
-    @MessageBody() data: string,
-    @ConnectedSocket() client: WebSocket,
-  ): string {
-    client.send(JSON.stringify({ event: 'test', data }));
-    return 'df';
+  handleMsg(@MessageBody() data: string, @ConnectedSocket() client: WebSocket) {
+    return { event: 'test', data };
   }
 }
