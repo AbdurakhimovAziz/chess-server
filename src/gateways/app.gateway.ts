@@ -12,15 +12,15 @@ import { Server, WebSocket } from 'ws';
 @WebSocketGateway()
 export class AppGateway implements OnGatewayConnection {
   @WebSocketServer()
-  server: Server;
+  public server: Server;
 
-  handleConnection(client: WebSocket, ...args: any[]): void {
+  public handleConnection(client: WebSocket, ...args: any[]): void {
     console.log('Client connected');
     client.send(JSON.stringify({ data: 'Successfully connected' }));
   }
 
   @SubscribeMessage('message')
-  handleEvent(
+  public handleMessage(
     @MessageBody() data: string,
     @ConnectedSocket() client: WebSocket,
   ): WsResponse<any> {
@@ -29,7 +29,10 @@ export class AppGateway implements OnGatewayConnection {
   }
 
   @SubscribeMessage('test')
-  handleMsg(@MessageBody() data: string, @ConnectedSocket() client: WebSocket) {
+  public handleTest(
+    @MessageBody() data: string,
+    @ConnectedSocket() client: WebSocket,
+  ): WsResponse<any> {
     return { event: 'test', data };
   }
 }
