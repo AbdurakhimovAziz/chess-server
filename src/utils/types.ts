@@ -1,7 +1,8 @@
 import { WebSocket } from 'ws';
 import { Lobby } from 'src/game/lobby/lobby';
+import { COLORS } from './constants';
 
 export type CustomSocket = WebSocket & {
   id: string;
-  lobby: Lobby | null;
+  lobbyId: string | null;
 };

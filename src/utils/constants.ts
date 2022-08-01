@@ -6,3 +6,8 @@ export const enum Events {
   LOBBY_JOIN = 'lobby-join',
   LOBBY_LEAVE = 'lobby-leave',
 }
+
+export const enum COLORS {
+  WHITE = 'white',
+  BLACK = 'black',
+}

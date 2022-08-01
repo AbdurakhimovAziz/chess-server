@@ -8,6 +8,7 @@ import {
   WebSocketServer,
   WsResponse,
 } from '@nestjs/websockets';
+import { CustomSocket } from 'src/utils/types';
 import { v4 } from 'uuid';
 import { Server, WebSocket } from 'ws';
 import { Events } from '../utils/constants';
@@ -22,42 +23,33 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(private lobbyManager: LobbyManagerService) {}
 
   public handleConnection(client: WebSocket, ...args: any[]): void {
-    const id = v4();
+    const lobbies = Array.from(this.lobbyManager.getLobbies());
     console.log('Client connected');
-    client.send(JSON.stringify({ data: 'Successfully connected' }));
-  }
-
-  @SubscribeMessage(Events.MESSAGE)
-  public handleMessage(
-    @MessageBody() data: string,
-    @ConnectedSocket() client: WebSocket,
-  ): WsResponse<any> {
-    const event = 'message';
-    console.log('Message received: ', data);
-
-    return { event, data };
-  }
-
-  @SubscribeMessage(Events.TEST)
-  public handleTest(
-    @MessageBody() data: string,
-    @ConnectedSocket() client: WebSocket,
-  ) {
-    this.server.clients.forEach((ws) => {
-      ws.send(JSON.stringify({ event: 'test', data: this.server.clients }));
-    });
+    client.send(
+      JSON.stringify({
+        event: 'message',
+        message: 'Successfully connected',
+        data: lobbies,
+      }),
+    );
   }
 
   @SubscribeMessage(Events.LOBBY_CREATE) public handleCreateLobby(
     @MessageBody() data: LobbyCreateDTO,
+    @ConnectedSocket() client: WebSocket,
   ): WsResponse<any> {
-    const lobby = this.lobbyManager.createLobby(data.maxClients);
-    console.log('Lobby created: ', lobby);
+    const [lobby, color] = this.lobbyManager.createLobby(
+      data.maxClients,
+      client,
+      data.userId,
+      data.color,
+    );
 
     return {
       event: Events.LOBBY_CREATE,
       data: {
         lobbyId: lobby.id,
+        hostColor: color,
         message: 'Lobby created',
       },
     };
@@ -67,13 +59,18 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: LobbyJoinDTO,
     @ConnectedSocket() client: WebSocket,
   ): WsResponse<any> {
-    // const
-    this.lobbyManager.joinLobby(data.lobbyId, client, data.userId);
+    const color = this.lobbyManager.joinLobby(
+      data.lobbyId,
+      client,
+      data.userId,
+    );
+
     return {
       event: Events.LOBBY_JOIN,
       data: {
         lobbyId: data.lobbyId,
         message: 'joined lobby',
+        color,
       },
     };
   }
@@ -82,7 +79,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: LobbyLeaveDTO,
     @ConnectedSocket() client: WebSocket,
   ): WsResponse<any> {
-    this.lobbyManager.leaveLobby(data.lobbyId, client, data.userId);
+    console.log('Client left lobby', client);
+
+    this.lobbyManager.leaveLobby(client as CustomSocket);
+
     return {
       event: Events.LOBBY_LEAVE,
       data: { message: 'left lobby', lobbyId: data.lobbyId },
@@ -101,7 +101,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
   }
 
-  public handleDisconnect(client: WebSocket): void {
-    console.log('Client disconnected');
+  public handleDisconnect(client: CustomSocket): void {
+    try {
+      console.log('Client disconnected', client.id, client.lobbyId);
+      this.lobbyManager.leaveLobby(client);
+    } catch (error) {}
   }
 }

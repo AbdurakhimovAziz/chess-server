@@ -3,6 +3,8 @@ import { WebSocket } from 'ws';
 
 import { CustomSocket } from 'src/utils/types';
 import { Lobby } from './lobby';
+import { COLORS } from 'src/utils/constants';
+import { WsException } from '@nestjs/websockets';
 
 @Injectable()
 export class LobbyManagerService {
@@ -11,31 +13,48 @@ export class LobbyManagerService {
     Lobby
   >();
 
-  public createLobby(maxClients: number): Lobby {
+  public createLobby(
+    maxClients: number,
+    socket: WebSocket,
+    userId: string,
+    hostColor?: COLORS,
+  ): [Lobby, COLORS] {
+    const client = socket as CustomSocket;
+    if (client.lobbyId) throw new WsException('Client already in lobby');
+
     const lobby = new Lobby(maxClients);
     this.lobbies.set(lobby.id, lobby);
-    return lobby;
+    const color = this.joinLobby(lobby.id, socket, userId, hostColor);
+    return [lobby, color];
   }
 
-  public joinLobby(lobbyId: string, socket: WebSocket, userId: string): void {
+  public joinLobby(
+    lobbyId: string,
+    socket: WebSocket,
+    userId: string,
+    hostColor?: COLORS,
+  ): COLORS {
+    const client: CustomSocket = socket as CustomSocket;
+    if (client.lobbyId) throw new WsException('Client already in lobby');
+
     const lobby = this.lobbies.get(lobbyId);
-    if (lobby) {
-      const client: CustomSocket = socket as CustomSocket;
-      client.id = userId;
-      lobby.addClient(client);
-    }
+    if (!lobby) throw new WsException('Lobby not found');
+
+    client.id = userId;
+    return lobby.addClient(client, hostColor);
   }
 
-  public leaveLobby(lobbyId: string, socket: WebSocket, userId: string): void {
-    const lobby = this.lobbies.get(lobbyId);
-    if (lobby) {
-      const client: CustomSocket = socket as CustomSocket;
-      client.id = userId;
-      lobby.removeClient(client);
-    }
+  public leaveLobby(client: CustomSocket): void {
+    if (!client.lobbyId || !client.id)
+      throw new WsException('Client not in lobby');
+
+    const lobby = this.lobbies.get(client.lobbyId);
+    if (!lobby) throw new WsException('Lobby not found');
+
+    lobby.removeClient(client);
   }
 
-  getLobbies(): Map<Lobby['id'], Lobby> {
+  public getLobbies(): Map<Lobby['id'], Lobby> {
     return this.lobbies;
   }
 }
