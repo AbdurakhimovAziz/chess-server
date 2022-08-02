@@ -1,5 +1,6 @@
 import { COLORS } from 'src/utils/constants';
 
+//TODO: receive user instead of userId
 export interface LobbyCreateDTO {
   maxClients: number;
   userId: string;

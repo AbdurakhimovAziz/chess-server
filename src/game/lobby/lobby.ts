@@ -10,7 +10,7 @@ export class Lobby {
     CustomSocket['id'],
     CustomSocket
   >();
-  public readonly palleyrsByColors: Map<COLORS, CustomSocket['id']> = new Map<
+  public readonly playersByColors: Map<COLORS, CustomSocket['id']> = new Map<
     COLORS,
     CustomSocket['id']
   >();
@@ -26,20 +26,23 @@ export class Lobby {
     if (this.clients.size === 0) {
       color = hostColor || Math.random() < 0.5 ? COLORS.WHITE : COLORS.BLACK;
     } else {
-      color = this.palleyrsByColors.get(COLORS.WHITE)
+      color = this.playersByColors.get(COLORS.WHITE)
         ? COLORS.BLACK
         : COLORS.WHITE;
     }
 
-    this.palleyrsByColors.set(color, client.id);
+    this.playersByColors.set(color, client.id);
     this.clients.set(client.id, client);
     client.lobbyId = this.id;
     return color;
   }
 
   public removeClient(client: CustomSocket): void {
-    this.clients.delete(client.id);
     client.lobbyId = null;
+    this.clients.delete(client.id);
+    this.playersByColors.forEach((id, color) => {
+      if (id === client.id) this.playersByColors.delete(color);
+    });
   }
 
   public toJSON() {
@@ -52,7 +55,7 @@ export class Lobby {
         };
         return filteredClient;
       }),
-      palleyrsByColors: Array.from(this.palleyrsByColors),
+      playersByColors: Array.from(this.playersByColors),
     };
   }
 }

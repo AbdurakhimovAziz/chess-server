@@ -1,4 +1,6 @@
+import { UseFilters } from '@nestjs/common';
 import {
+  BaseWsExceptionFilter,
   ConnectedSocket,
   MessageBody,
   OnGatewayConnection,
@@ -8,13 +10,14 @@ import {
   WebSocketServer,
   WsResponse,
 } from '@nestjs/websockets';
+import { WebsocketExceptionsFilter } from 'src/filters/websocket-exceptions.filter';
 import { CustomSocket } from 'src/utils/types';
-import { v4 } from 'uuid';
 import { Server, WebSocket } from 'ws';
 import { Events } from '../utils/constants';
 import { LobbyCreateDTO, LobbyJoinDTO, LobbyLeaveDTO } from './dtos';
 import { LobbyManagerService } from './lobby/lobby-manager.service';
 
+@UseFilters(new WebsocketExceptionsFilter())
 @WebSocketGateway()
 export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
@@ -23,18 +26,26 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(private lobbyManager: LobbyManagerService) {}
 
   public handleConnection(client: WebSocket, ...args: any[]): void {
-    const lobbies = Array.from(this.lobbyManager.getLobbies());
     console.log('Client connected');
     client.send(
       JSON.stringify({
-        event: 'message',
         message: 'Successfully connected',
-        data: lobbies,
       }),
     );
   }
 
-  @SubscribeMessage(Events.LOBBY_CREATE) public handleCreateLobby(
+  @SubscribeMessage(Events.LOBBY_LIST)
+  public getLobbies(): WsResponse<any> {
+    const lobbies = Array.from(this.lobbyManager.getLobbies().values());
+
+    return {
+      event: Events.LOBBY_LIST,
+      data: lobbies,
+    };
+  }
+
+  @SubscribeMessage(Events.LOBBY_CREATE)
+  public handleCreateLobby(
     @MessageBody() data: LobbyCreateDTO,
     @ConnectedSocket() client: WebSocket,
   ): WsResponse<any> {
@@ -48,14 +59,15 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     return {
       event: Events.LOBBY_CREATE,
       data: {
-        lobbyId: lobby.id,
+        lobby: lobby,
         hostColor: color,
         message: 'Lobby created',
       },
     };
   }
 
-  @SubscribeMessage(Events.LOBBY_JOIN) public handleJoinLobby(
+  @SubscribeMessage(Events.LOBBY_JOIN)
+  public handleJoinLobby(
     @MessageBody() data: LobbyJoinDTO,
     @ConnectedSocket() client: WebSocket,
   ): WsResponse<any> {
@@ -75,7 +87,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     };
   }
 
-  @SubscribeMessage(Events.LOBBY_LEAVE) public handleLeaveLobby(
+  @SubscribeMessage(Events.LOBBY_LEAVE)
+  public handleLeaveLobby(
     @MessageBody() data: LobbyLeaveDTO,
     @ConnectedSocket() client: WebSocket,
   ): WsResponse<any> {
