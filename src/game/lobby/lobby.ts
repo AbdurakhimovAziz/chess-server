@@ -10,10 +10,6 @@ export class Lobby {
     CustomSocket['id'],
     CustomSocket
   >();
-  public readonly playersByColors: Map<COLORS, CustomSocket['id']> = new Map<
-    COLORS,
-    CustomSocket['id']
-  >();
 
   constructor(private maxClients: number = 2) {}
 
@@ -26,12 +22,12 @@ export class Lobby {
     if (this.clients.size === 0) {
       color = hostColor || Math.random() < 0.5 ? COLORS.WHITE : COLORS.BLACK;
     } else {
-      color = this.playersByColors.get(COLORS.WHITE)
-        ? COLORS.BLACK
-        : COLORS.WHITE;
+      this.clients.forEach((c, _) => {
+        if (c.color === COLORS.WHITE) color = COLORS.BLACK;
+        else color = COLORS.WHITE;
+      });
     }
 
-    this.playersByColors.set(color, client.id);
     this.clients.set(client.id, client);
     client.lobbyId = this.id;
     return color;
@@ -40,22 +36,23 @@ export class Lobby {
   public removeClient(client: CustomSocket): void {
     client.lobbyId = null;
     this.clients.delete(client.id);
-    this.playersByColors.forEach((id, color) => {
-      if (id === client.id) this.playersByColors.delete(color);
-    });
   }
 
   public toJSON() {
     return {
       id: this.id,
       clients: Array.from(this.clients.values()).map((c) => {
-        const filteredClient: Pick<CustomSocket, 'id' | 'lobbyId'> = {
+        const filteredClient: Pick<
+          CustomSocket,
+          'id' | 'lobbyId' | 'details' | 'color'
+        > = {
           id: c.id,
           lobbyId: c.lobbyId,
+          details: c.details,
+          color: c.color,
         };
         return filteredClient;
       }),
-      playersByColors: Array.from(this.playersByColors),
     };
   }
 }

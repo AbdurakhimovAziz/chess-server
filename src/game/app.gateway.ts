@@ -52,14 +52,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const [lobby, color] = this.lobbyManager.createLobby(
       data.maxClients,
       client,
-      data.userId,
+      data.user,
       data.color,
     );
 
     return {
       event: Events.LOBBY_CREATE,
       data: {
-        lobby: lobby,
+        lobby,
         hostColor: color,
         message: 'Lobby created',
       },
@@ -71,11 +71,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: LobbyJoinDTO,
     @ConnectedSocket() client: WebSocket,
   ): WsResponse<any> {
-    const color = this.lobbyManager.joinLobby(
-      data.lobbyId,
-      client,
-      data.userId,
-    );
+    const color = this.lobbyManager.joinLobby(data.lobbyId, client, data.user);
 
     return {
       event: Events.LOBBY_JOIN,
@@ -92,8 +88,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: LobbyLeaveDTO,
     @ConnectedSocket() client: WebSocket,
   ): WsResponse<any> {
-    console.log('Client left lobby', client);
-
     this.lobbyManager.leaveLobby(client as CustomSocket);
 
     return {

@@ -1,15 +1,15 @@
 import { COLORS } from 'src/utils/constants';
+import { UserDetails } from 'src/utils/types';
 
-//TODO: receive user instead of userId
 export interface LobbyCreateDTO {
   maxClients: number;
-  userId: string;
+  user: UserDetails;
   color?: COLORS;
 }
 
 export interface LobbyJoinDTO {
   lobbyId: string;
-  userId: string;
+  user: UserDetails;
 }
 
 export interface LobbyLeaveDTO extends LobbyJoinDTO {}
