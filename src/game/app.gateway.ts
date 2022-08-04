@@ -98,14 +98,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage(Events.MOVE)
   public handleMove(
-    @MessageBody() data: string,
+    @MessageBody() data: any,
     @ConnectedSocket() client: WebSocket,
   ) {
-    this.server.clients.forEach((ws) => {
-      if (ws !== client) {
-        ws.send(JSON.stringify({ event: 'move', data }));
-      }
-    });
+    this.lobbyManager.handleMove(client as CustomSocket, data);
   }
 
   public handleDisconnect(client: CustomSocket): void {

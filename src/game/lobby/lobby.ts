@@ -1,5 +1,5 @@
 import { WsException } from '@nestjs/websockets';
-import { COLORS } from 'src/utils/constants';
+import { COLORS, Events } from 'src/utils/constants';
 import { CustomSocket } from 'src/utils/types';
 import { v4 } from 'uuid';
 
@@ -36,6 +36,11 @@ export class Lobby {
   public removeClient(client: CustomSocket): void {
     client.lobbyId = null;
     this.clients.delete(client.id);
+    this.clients.forEach((c) => {
+      c.send(
+        JSON.stringify({ event: Events.ERROR, data: 'Opponent disconnected' }),
+      );
+    });
   }
 
   public toJSON() {

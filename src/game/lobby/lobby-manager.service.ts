@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { WebSocket } from 'ws';
 import { CustomSocket, UserDetails } from 'src/utils/types';
 import { Lobby } from './lobby';
-import { COLORS } from 'src/utils/constants';
+import { COLORS, Events } from 'src/utils/constants';
 import { WsException } from '@nestjs/websockets';
 
 @Injectable()
@@ -24,7 +24,7 @@ export class LobbyManagerService {
     hostColor?: COLORS,
   ): [Lobby, COLORS] {
     const client = socket as CustomSocket;
-    console.log(this.clientLobbyMap.get(user._id));
+    console.log(client.lobbyId, this.clientLobbyMap.get(user._id));
 
     if (client.lobbyId || this.clientLobbyMap.get(user._id))
       throw new WsException('Client already in lobby');
@@ -71,5 +71,16 @@ export class LobbyManagerService {
 
   public getLobbies(): Map<Lobby['id'], Lobby> {
     return this.lobbies;
+  }
+
+  public handleMove(client: CustomSocket, move: any): void {
+    const lobby = this.lobbies.get(client.lobbyId);
+    if (!lobby) throw new WsException('Lobby not found');
+
+    lobby.clients.forEach((c) => {
+      if (c !== client) {
+        c.send(JSON.stringify({ event: Events.MOVE, data: move }));
+      }
+    });
   }
 }
