@@ -2,9 +2,11 @@ import { WsException } from '@nestjs/websockets';
 import { COLORS, Events } from 'src/utils/constants';
 import { CustomSocket } from 'src/utils/types';
 import { v4 } from 'uuid';
+import { GameStatus } from '../game-status';
 
 export class Lobby {
   public readonly id: string = v4();
+  private gameStatus: GameStatus = GameStatus.WAITING;
 
   public readonly clients: Map<CustomSocket['id'], CustomSocket> = new Map<
     CustomSocket['id'],
@@ -16,6 +18,8 @@ export class Lobby {
   public addClient(client: CustomSocket, hostColor?: COLORS): COLORS {
     if (this.clients.size >= this.maxClients)
       throw new WsException('Lobby is full');
+    if (this.gameStatus === GameStatus.IN_PROGRESS)
+      throw new WsException('Can not join lobby during game');
 
     let color: COLORS | undefined;
 
@@ -30,6 +34,14 @@ export class Lobby {
 
     this.clients.set(client.id, client);
     client.lobbyId = this.id;
+
+    if (this.clients.size === this.maxClients) {
+      this.setGameStatus(GameStatus.IN_PROGRESS);
+      this.clients.forEach((c) => {
+        if (c.id !== client.id) this.sendGameStatus(c);
+      });
+    }
+
     return color;
   }
 
@@ -43,9 +55,27 @@ export class Lobby {
     });
   }
 
+  public setGameStatus(gameStatus: GameStatus): void {
+    this.gameStatus = gameStatus;
+  }
+
+  public getGameStatus(): GameStatus {
+    return this.gameStatus;
+  }
+
+  public sendGameStatus(client: CustomSocket): void {
+    client.send(
+      JSON.stringify({
+        event: Events.GAME_STATUS,
+        data: this.gameStatus,
+      }),
+    );
+  }
+
   public toJSON() {
     return {
       id: this.id,
+      gameStatus: this.gameStatus,
       clients: Array.from(this.clients.values()).map((c) => {
         const filteredClient: Pick<
           CustomSocket,

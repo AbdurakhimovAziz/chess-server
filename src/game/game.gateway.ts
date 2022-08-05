@@ -1,6 +1,5 @@
 import { UseFilters } from '@nestjs/common';
 import {
-  BaseWsExceptionFilter,
   ConnectedSocket,
   MessageBody,
   OnGatewayConnection,
@@ -86,6 +85,7 @@ export class GameGateway
         lobbyId: data.lobbyId,
         message: 'joined lobby',
         color,
+        gameStatus: this.lobbyManager.getGameStatus(data.lobbyId),
       },
     };
   }
@@ -96,7 +96,6 @@ export class GameGateway
     @ConnectedSocket() client: WebSocket,
   ): WsResponse<any> {
     this.lobbyManager.leaveLobby(client as CustomSocket);
-
     return {
       event: Events.LOBBY_LEAVE,
       data: { message: 'left lobby', lobbyId: data.lobbyId },

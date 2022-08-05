@@ -4,6 +4,7 @@ import { CustomSocket, UserDetails } from 'src/utils/types';
 import { Lobby } from './lobby';
 import { COLORS, Events } from 'src/utils/constants';
 import { WsException } from '@nestjs/websockets';
+import { GameStatus } from '../game-status';
 
 @Injectable()
 export class LobbyManagerService {
@@ -20,6 +21,13 @@ export class LobbyManagerService {
 
   public setServer(server: Server): void {
     this.server = server;
+  }
+
+  public getGameStatus(lobbyId: string): GameStatus {
+    const lobby = this.lobbies.get(lobbyId);
+    if (!lobby) throw new WsException('Lobby not found');
+
+    return lobby.getGameStatus();
   }
 
   public createLobby(
