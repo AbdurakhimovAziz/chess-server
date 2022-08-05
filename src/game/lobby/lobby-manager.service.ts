@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { WebSocket } from 'ws';
+import { Server, WebSocket } from 'ws';
 import { CustomSocket, UserDetails } from 'src/utils/types';
 import { Lobby } from './lobby';
 import { COLORS, Events } from 'src/utils/constants';
@@ -7,6 +7,7 @@ import { WsException } from '@nestjs/websockets';
 
 @Injectable()
 export class LobbyManagerService {
+  private server: Server;
   private readonly lobbies: Map<Lobby['id'], Lobby> = new Map<
     Lobby['id'],
     Lobby
@@ -16,6 +17,10 @@ export class LobbyManagerService {
     CustomSocket['id'],
     Lobby['id']
   >();
+
+  public setServer(server: Server): void {
+    this.server = server;
+  }
 
   public createLobby(
     maxClients: number,
@@ -54,6 +59,7 @@ export class LobbyManagerService {
     this.clientLobbyMap.set(client.id, lobby.id);
 
     client.color = color;
+    this.sendLobbiesToAll();
     return color;
   }
 
@@ -67,10 +73,11 @@ export class LobbyManagerService {
     lobby.removeClient(client);
     this.clientLobbyMap.delete(client.id);
     if (lobby.clients.size === 0) this.lobbies.delete(lobby.id);
+    this.sendLobbiesToAll();
   }
 
-  public getLobbies(): Map<Lobby['id'], Lobby> {
-    return this.lobbies;
+  public getLobbies(): Lobby[] {
+    return Array.from(this.lobbies.values());
   }
 
   public handleMove(client: CustomSocket, move: any): void {
@@ -81,6 +88,14 @@ export class LobbyManagerService {
       if (c !== client) {
         c.send(JSON.stringify({ event: Events.MOVE, data: move }));
       }
+    });
+  }
+
+  public sendLobbiesToAll(): void {
+    this.server.clients.forEach((c) => {
+      c.send(
+        JSON.stringify({ event: Events.LOBBY_LIST, data: this.getLobbies() }),
+      );
     });
   }
 }

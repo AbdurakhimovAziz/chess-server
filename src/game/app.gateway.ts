@@ -5,6 +5,7 @@ import {
   MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  OnGatewayInit,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
@@ -19,11 +20,17 @@ import { LobbyManagerService } from './lobby/lobby-manager.service';
 
 @UseFilters(new WebsocketExceptionsFilter())
 @WebSocketGateway()
-export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class GameGateway
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   public server: Server;
 
   constructor(private lobbyManager: LobbyManagerService) {}
+
+  afterInit(server: Server) {
+    this.lobbyManager.setServer(server);
+  }
 
   public handleConnection(client: WebSocket, ...args: any[]): void {
     console.log('Client connected');
@@ -36,7 +43,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage(Events.LOBBY_LIST)
   public getLobbies(): WsResponse<any> {
-    const lobbies = Array.from(this.lobbyManager.getLobbies().values());
+    const lobbies = this.lobbyManager.getLobbies();
 
     return {
       event: Events.LOBBY_LIST,
