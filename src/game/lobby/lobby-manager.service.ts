@@ -30,6 +30,30 @@ export class LobbyManagerService {
     return lobby.getGameStatus();
   }
 
+  public isLobbyFull(lobbyId: string): boolean {
+    const lobby = this.lobbies.get(lobbyId);
+    if (!lobby) throw new WsException('Lobby not found');
+
+    return lobby.isFull();
+  }
+
+  public dispatchGameStatus(lobbyId: string): void {
+    const lobby = this.lobbies.get(lobbyId);
+    if (!lobby) throw new WsException('Lobby not found');
+
+    lobby.clients.forEach((c) => {
+      c.send(
+        JSON.stringify({
+          event: Events.GAME_STATUS,
+          data: {
+            gameStatus: lobby.getGameStatus(),
+            lobby,
+          },
+        }),
+      );
+    });
+  }
+
   public createLobby(
     maxClients: number,
     socket: WebSocket,
@@ -37,7 +61,6 @@ export class LobbyManagerService {
     hostColor?: COLORS,
   ): [Lobby, COLORS] {
     const client = socket as CustomSocket;
-    console.log(client.lobbyId, this.clientLobbyMap.get(user._id));
 
     if (client.lobbyId || this.clientLobbyMap.get(user._id))
       throw new WsException('Client already in lobby');
@@ -65,7 +88,6 @@ export class LobbyManagerService {
     client.details = user;
     const color = lobby.addClient(client, hostColor);
     this.clientLobbyMap.set(client.id, lobby.id);
-
     client.color = color;
     this.sendLobbiesToAll();
     return color;

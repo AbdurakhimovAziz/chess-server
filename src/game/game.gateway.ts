@@ -76,18 +76,24 @@ export class GameGateway
   public handleJoinLobby(
     @MessageBody() data: LobbyJoinDTO,
     @ConnectedSocket() client: WebSocket,
-  ): WsResponse<any> {
-    const color = this.lobbyManager.joinLobby(data.lobbyId, client, data.user);
+  ): void {
+    const { lobbyId, user } = data;
+    const color = this.lobbyManager.joinLobby(lobbyId, client, user);
 
-    return {
-      event: Events.LOBBY_JOIN,
-      data: {
-        lobbyId: data.lobbyId,
-        message: 'joined lobby',
-        color,
-        gameStatus: this.lobbyManager.getGameStatus(data.lobbyId),
-      },
-    };
+    client.send(
+      JSON.stringify({
+        event: Events.LOBBY_JOIN,
+        data: {
+          lobbyId: lobbyId,
+          message: 'joined lobby',
+          color,
+        },
+      }),
+    );
+
+    if (this.lobbyManager.isLobbyFull(lobbyId)) {
+      this.lobbyManager.dispatchGameStatus(lobbyId);
+    }
   }
 
   @SubscribeMessage(Events.LOBBY_LEAVE)

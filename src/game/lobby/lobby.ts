@@ -26,20 +26,21 @@ export class Lobby {
     if (this.clients.size === 0) {
       color = hostColor || Math.random() < 0.5 ? COLORS.WHITE : COLORS.BLACK;
     } else {
-      this.clients.forEach((c, _) => {
-        if (c.color === COLORS.WHITE) color = COLORS.BLACK;
-        else color = COLORS.WHITE;
-      });
+      color =
+        this.clients.values().next().value.color === COLORS.WHITE
+          ? COLORS.BLACK
+          : COLORS.WHITE;
+      // this.clients.forEach((c, _) => {
+      //   if (c.color === COLORS.WHITE) color = COLORS.BLACK;
+      //   else color = COLORS.WHITE;
+      // });
     }
 
     this.clients.set(client.id, client);
     client.lobbyId = this.id;
 
-    if (this.clients.size === this.maxClients) {
+    if (this.isFull()) {
       this.setGameStatus(GameStatus.IN_PROGRESS);
-      this.clients.forEach((c) => {
-        if (c.id !== client.id) this.sendGameStatus(c);
-      });
     }
 
     return color;
@@ -63,13 +64,8 @@ export class Lobby {
     return this.gameStatus;
   }
 
-  public sendGameStatus(client: CustomSocket): void {
-    client.send(
-      JSON.stringify({
-        event: Events.GAME_STATUS,
-        data: this.gameStatus,
-      }),
-    );
+  public isFull(): boolean {
+    return this.clients.size === this.maxClients;
   }
 
   public toJSON() {
