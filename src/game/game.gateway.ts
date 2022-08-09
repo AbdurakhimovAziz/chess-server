@@ -56,6 +56,7 @@ export class GameGateway
     @ConnectedSocket() client: WebSocket,
   ): WsResponse<any> {
     const [lobby, color] = this.lobbyManager.createLobby(
+      data.name,
       data.maxClients,
       client,
       data.user,

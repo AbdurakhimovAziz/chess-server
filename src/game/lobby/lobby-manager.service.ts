@@ -55,17 +55,18 @@ export class LobbyManagerService {
   }
 
   public createLobby(
+    name: string,
     maxClients: number,
     socket: WebSocket,
     user: UserDetails,
-    hostColor?: COLORS,
+    hostColor: COLORS,
   ): [Lobby, COLORS] {
     const client = socket as CustomSocket;
 
     if (client.lobbyId || this.clientLobbyMap.get(user._id))
       throw new WsException('Client already in lobby');
 
-    const lobby = new Lobby(maxClients);
+    const lobby = new Lobby(name, maxClients);
     this.lobbies.set(lobby.id, lobby);
     const color = this.joinLobby(lobby.id, socket, user, hostColor);
     return [lobby, color];

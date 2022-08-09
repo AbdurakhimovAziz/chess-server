@@ -13,7 +13,7 @@ export class Lobby {
     CustomSocket
   >();
 
-  constructor(private maxClients: number = 2) {}
+  constructor(private name: string, private maxClients: number = 2) {}
 
   public addClient(client: CustomSocket, hostColor?: COLORS): COLORS {
     if (this.clients.size >= this.maxClients)
@@ -24,16 +24,17 @@ export class Lobby {
     let color: COLORS | undefined;
 
     if (this.clients.size === 0) {
-      color = hostColor || Math.random() < 0.5 ? COLORS.WHITE : COLORS.BLACK;
+      color =
+        hostColor === COLORS.RANDOM
+          ? Math.random() < 0.5
+            ? COLORS.WHITE
+            : COLORS.BLACK
+          : hostColor;
     } else {
       color =
         this.clients.values().next().value.color === COLORS.WHITE
           ? COLORS.BLACK
           : COLORS.WHITE;
-      // this.clients.forEach((c, _) => {
-      //   if (c.color === COLORS.WHITE) color = COLORS.BLACK;
-      //   else color = COLORS.WHITE;
-      // });
     }
 
     this.clients.set(client.id, client);
@@ -71,6 +72,7 @@ export class Lobby {
   public toJSON() {
     return {
       id: this.id,
+      name: this.name,
       gameStatus: this.gameStatus,
       clients: Array.from(this.clients.values()).map((c) => {
         const filteredClient: Pick<
