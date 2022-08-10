@@ -18,8 +18,8 @@ export class Lobby {
   public addClient(client: CustomSocket, hostColor?: COLORS): COLORS {
     if (this.clients.size >= this.maxClients)
       throw new WsException('Lobby is full');
-    if (this.gameStatus === GameStatus.IN_PROGRESS)
-      throw new WsException('Can not join lobby during game');
+    if (this.gameStatus !== GameStatus.WAITING)
+      throw new WsException('Can not join lobby');
 
     let color: COLORS | undefined;
 
@@ -55,6 +55,7 @@ export class Lobby {
         JSON.stringify({ event: Events.ERROR, data: 'Opponent disconnected' }),
       );
     });
+    this.setGameStatus(GameStatus.FINISHED);
   }
 
   public setGameStatus(gameStatus: GameStatus): void {

@@ -101,8 +101,10 @@ export class LobbyManagerService {
     const lobby = this.lobbies.get(client.lobbyId);
     if (!lobby) throw new WsException('Lobby not found');
 
+    const { lobbyId } = client;
     lobby.removeClient(client);
     this.clientLobbyMap.delete(client.id);
+    this.dispatchGameStatus(lobbyId);
     if (lobby.clients.size === 0) this.lobbies.delete(lobby.id);
     this.sendLobbiesToAll();
   }

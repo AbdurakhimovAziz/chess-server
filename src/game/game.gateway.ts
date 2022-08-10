@@ -119,7 +119,6 @@ export class GameGateway
 
   public handleDisconnect(client: CustomSocket): void {
     try {
-      console.log('Client disconnected', client.id, client.lobbyId);
       this.lobbyManager.leaveLobby(client);
     } catch (error) {}
   }
