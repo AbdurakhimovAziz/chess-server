@@ -95,9 +95,6 @@ export class LobbyManagerService {
   }
 
   public leaveLobby(client: CustomSocket): void {
-    if (!client.lobbyId || !client.id)
-      throw new WsException('Client not in lobby');
-
     const lobby = this.lobbies.get(client.lobbyId);
     if (!lobby) throw new WsException('Lobby not found');
 

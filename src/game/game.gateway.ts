@@ -18,16 +18,12 @@ import { LobbyCreateDTO, LobbyJoinDTO, LobbyLeaveDTO } from './dtos';
 import { LobbyManagerService } from './lobby/lobby-manager.service';
 
 @UseFilters(new WebsocketExceptionsFilter())
-@WebSocketGateway({
-  pingInterval: 10000,
-  pingTimeout: 5000,
-})
+@WebSocketGateway()
 export class GameGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
   @WebSocketServer()
   public server: Server;
-  private interval: NodeJS.Timeout;
 
   constructor(private lobbyManager: LobbyManagerService) {}
 
@@ -39,7 +35,7 @@ export class GameGateway
     console.log('Client connected');
     client.interval = setInterval(() => {
       client.ping();
-    }, 10000);
+    }, 20000);
 
     client.send(
       JSON.stringify({
@@ -127,8 +123,10 @@ export class GameGateway
 
   public handleDisconnect(client: CustomSocket): void {
     try {
-      this.lobbyManager.leaveLobby(client);
+      client.lobbyId && client.id && this.lobbyManager.leaveLobby(client);
       clearInterval(client.interval);
-    } catch (error) {}
+    } catch (error) {
+      console.log(error);
+    }
   }
 }
