@@ -35,8 +35,12 @@ export class GameGateway
     this.lobbyManager.setServer(server);
   }
 
-  public handleConnection(client: WebSocket, ...args: any[]): void {
+  public handleConnection(client: CustomSocket, ...args: any[]): void {
     console.log('Client connected');
+    client.interval = setInterval(() => {
+      client.ping();
+    }, 10000);
+
     client.send(
       JSON.stringify({
         message: 'Successfully connected',
@@ -124,6 +128,7 @@ export class GameGateway
   public handleDisconnect(client: CustomSocket): void {
     try {
       this.lobbyManager.leaveLobby(client);
+      clearInterval(client.interval);
     } catch (error) {}
   }
 }

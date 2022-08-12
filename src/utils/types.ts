@@ -7,6 +7,7 @@ export type CustomSocket = WebSocket & {
   lobbyId: string | null;
   color: COLORS;
   details: UserDetails;
+  interval: NodeJS.Timeout;
 };
 
 export type UserDetails = Pick<
