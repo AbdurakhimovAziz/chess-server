@@ -18,12 +18,16 @@ import { LobbyCreateDTO, LobbyJoinDTO, LobbyLeaveDTO } from './dtos';
 import { LobbyManagerService } from './lobby/lobby-manager.service';
 
 @UseFilters(new WebsocketExceptionsFilter())
-@WebSocketGateway()
+@WebSocketGateway({
+  pingInterval: 10000,
+  pingTimeout: 5000,
+})
 export class GameGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
   @WebSocketServer()
   public server: Server;
+  private interval: NodeJS.Timeout;
 
   constructor(private lobbyManager: LobbyManagerService) {}
 

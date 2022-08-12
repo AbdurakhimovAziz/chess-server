@@ -114,6 +114,7 @@ export class LobbyManagerService {
   }
 
   public handleMove(client: CustomSocket, move: any): void {
+    //TODO: do not bind lobby id to client
     const lobby = this.lobbies.get(client.lobbyId);
     if (!lobby) throw new WsException('Lobby not found');
 
